@@ -3,6 +3,7 @@ import os
 import numpy
 import tkinter as tk
 from tkinter import filedialog as fd
+from tkinter import ttk
 
 
 
@@ -676,8 +677,16 @@ class physio_gui():
         self.window = tk.Tk()
         self.window.title('Write PNM Input')
 
-        self.frame_files = tk.Frame()
-        #Create frame of input file information
+        #Create tabs for single use and batch mode
+        self.tabControl = ttk.Notebook(self.window)
+        self.single_tab = ttk.Frame(self.tabControl)
+        self.batch_tab = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.single_tab, text='Single_Mode')
+        self.tabControl.add(self.batch_tab, text='Batch_Mode')
+        self.tabControl.pack(expand=1, fill="both")
+
+        self.frame_files = tk.Frame(self.single_tab)
+        #Create frame of input file information for single use
         self.ppg_file_lbl = tk.Label(self.frame_files, text='PPG File:')
         self.ppgfile_var = tk.StringVar(self.window)
         self.ppg_file_entry = tk.Entry(self.frame_files, textvariable=self.ppgfile_var)
@@ -709,6 +718,34 @@ class physio_gui():
         self.out_dir_btn.grid(row=2, column=2, sticky='w')
         self.out_file_lbl.grid(row=2, column=3, sticky='w')
         self.out_file_entry.grid(row=2, column=4, sticky='w')
+
+        self.frame_files_batch = tk.Frame(self.batch_tab)
+        #Create frame of input file information for batch use
+        self.batch_file_lbl = tk.Label(self.frame_files_batch, text='Batch File:')
+        self.batchfile_var = tk.StringVar(self.window)
+        self.batch_file_entry = tk.Entry(self.frame_files_batch, textvariable=self.batchfile_var)
+        self.batch_file_btn = tk.Button(self.frame_files_batch, text='Open', command=self.gui_open_batch)
+        self.batchppgdatatype_lbl = tk.Label(self.frame_files_batch, text='PPG Type:')
+        self.batchppgdatatype_var = tk.StringVar(self.window)
+        self.batchppgdatatype_var.set('Recorded Data')
+        batchppgtypechoices = ['Recorded Data', 'Triggers']
+        self.batchppg_datatype_drop = tk.OptionMenu(self.frame_files_batch, self.batchppgdatatype_var, *batchppgtypechoices)
+        self.batchout_dir_lbl = tk.Label(self.frame_files_batch, text='Output Dir.:')
+        self.batchoutdir_var = tk.StringVar(self.window)
+        self.batchout_dir_entry = tk.Entry(self.frame_files_batch, textvariable=self.batchoutdir_var)
+        self.batchout_dir_btn = tk.Button(self.frame_files_batch, text='Select', command=self.gui_select_batchoutdir)
+        self.batchout_suffix_lbl = tk.Label(self.frame_files_batch, text='Output Suffix:')
+        self.batchoutsuffix_var = tk.StringVar(self.window)
+        self.batchout_suffix_entry = tk.Entry(self.frame_files_batch, textvariable=self.batchoutsuffix_var)
+        self.batch_file_lbl.grid(row=0, column=0, sticky='w')
+        self.batch_file_entry.grid(row=0, column=1, sticky='w')
+        self.batch_file_btn.grid(row=0, column=2, sticky='w')
+        self.batchppg_datatype_drop.grid(row=0, column=3, sticky='w')
+        self.batchout_dir_lbl.grid(row=1, column=0, sticky='w')
+        self.batchout_dir_entry.grid(row=1, column=1, sticky='w')
+        self.batchout_dir_btn.grid(row=1, column=2, sticky='w')
+        self.batchout_suffix_lbl.grid(row=1, column=3, sticky='w')
+        self.batchout_suffix_entry.grid(row=1, column=4, sticky='w')
 
         self.frame_samprates = tk.Frame()
         #Create frame for sampling rates
@@ -761,6 +798,7 @@ class physio_gui():
         self.frame_samprates.pack(fill=tk.X, expand=True)
         self.frame_options.pack(fill=tk.X, expand=True)
         self.frame_responses.pack(fill=tk.X, expand=True)
+        self.frame_files_batch.pack(fill=tk.X, expand=True)
 
 
     def run_loop(self):
@@ -780,11 +818,21 @@ class physio_gui():
         resp_filename = fd.askopenfilename(parent=self.window)
         self.respfile_var.set(resp_filename)
 
+    def gui_open_batch(self):
+        print('Opening file selection dialogue...')
+        #Open file-selection dialogue to get a file path and name
+        batch_filename = fd.askopenfilename(parent=self.window)
+        self.batchfile_var.set(batch_filename)
+
     def gui_select_outdir(self):
         print('Opening directory selection dialogue...')
         output_dir = fd.askdirectory(parent=self.window)
         self.outdir_var.set(output_dir)
 
+    def gui_select_batchoutdir(self):
+        print('Opening directory selection dialogue...')
+        batch_output_dir = fd.askdirectory(parent=self.window)
+        self.batchoutdir_var.set(batch_output_dir)
 
     def gui_run_btn(self):
         intermediate_files = []
