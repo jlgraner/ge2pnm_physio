@@ -681,8 +681,8 @@ class physio_gui():
         self.tabControl = ttk.Notebook(self.window)
         self.single_tab = ttk.Frame(self.tabControl)
         self.batch_tab = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.single_tab, text='Single_Mode')
-        self.tabControl.add(self.batch_tab, text='Batch_Mode')
+        self.tabControl.add(self.single_tab, text='Single Mode')
+        self.tabControl.add(self.batch_tab, text='Batch Mode')
         self.tabControl.pack(expand=1, fill="both")
 
         self.frame_files = tk.Frame(self.single_tab)
@@ -835,6 +835,16 @@ class physio_gui():
         self.batchoutdir_var.set(batch_output_dir)
 
     def gui_run_btn(self):
+        #Check to see if we're in single mode or batch mode
+        tabname = tabControl.tab(tabControl.select(), "text")
+        if tabname == 'Single Mode':
+            run_single_mode(self)
+        elif tabname == 'Batch Mode':
+            run_batch_mode(self)
+        else:
+            raise RuntimeError('Tab name found: {}'.format(tabname))
+
+    def run_single_mode(self):
         intermediate_files = []
         delete_intermediates = 1
         #Pull variables from the GUI and check them
@@ -865,8 +875,8 @@ class physio_gui():
             if not os.path.exists(outdir):
                 raise RuntimeError('Output dir not found: {}'.format(outdir))
 
-            working_ppg = ppg_input
-            working_resp = resp_input
+            # working_ppg = ppg_input
+            # working_resp = resp_input
 
         except Exception as ex:
             print('Something went wrong checking variables')
@@ -885,6 +895,76 @@ class physio_gui():
         print('Conversion successful!')
 
 
+    def run_batch_mode(self):
+        intermediate_files = []
+        delete_intermediates = 1
+        #Pull variables from the GUI and check them
+        try:
+            batch_input = str(self.batchfile_var.get())
+            ppgsamprate = float(self.ppgsamprate_var.get())
+            respsamprate = float(self.respsamprate_var.get())
+            trim_flag = int(self.cut_var.get())
+            cut_trs = int(self.dummytr_var.get())
+            tr = float(self.tr_var.get())
+            ppgtype = str(self.batchppgdatatype_var.get())
+            delete_flag = int(self.delete_var.get())
+            outdir = str(self.batchoutdir_var.get())
+            outsuffix = str(self.batchoutsuffix_var.get())
+            overwrite = int(self.overwrite_var.get())
+
+            ##Create output file name
+            file_name = os.path.split(batch_input)[-1]
+            prefix = os.path.splitext(file_name)[0]
+            #If the output suffix does not start with a _, add one.
+            if outsuffix[0] != '_':
+                outsuffix = '_{}'.format(outsuffix)
+
+            ###TODO THIS NEEDS TO BE MOVED INTO THE FOR LOOP
+            out_file_name = '{}{}.txt'.format(prefix, outsuffix)
+            output_file = os.path.join(outdir, out_file_name)
+
+            #Check inputs
+            if not os.path.exists(batch_input):
+                raise RuntimeError('Batch input file not found: {}'.format(batch_input))
+
+            if trim_flag not in [1,0]:
+                raise RuntimeError('Something went wrong with the trim flag: {}'.format(trim_flag))
+
+            if not os.path.exists(outdir):
+                raise RuntimeError('Output dir not found: {}'.format(outdir))
+
+            #Read in the batch file
+            with open(batch_input, 'r') as fd:
+                contents = fd.read()
+
+            #For each row in the batch file:
+            for line in contents:
+                #Pull out the ppg_input and resp_input
+                line_parts = line.split()
+                ppg_input = line_parts[0]
+                resp_input = line_parts[1]
+                #Check that those files exist
+                if not os.path.exists(ppg_input):
+                    raise RuntimeError('PPG input file not found: {}'.format(ppg_input))
+                if not os.path.exists(resp_input):
+                    raise RuntimeError('Resp input file not found: {}'.format(resp_input))
+
+                #Run convert_ge_to_pnm()
+                try:
+                    #Run the conversion
+                    convert_ge_to_pnm(ppg_input, resp_input, ppgsamprate, respsamprate, ppgtype, tr, trim_flag, cut_trs, delete_flag, output_file, overwrite=overwrite)
+                except Exception as ex:
+                    print('Error occurred during conversion: {}'.format(ex))
+                    self.window.destroy()
+                    raise RuntimeError
+
+        except Exception as ex:
+            print('Something went wrong checking variables')
+            print(ex)
+            self.window.destroy()
+            raise RuntimeError
+
+        print('Conversion successful!')
 
     def gui_quit_btn(self):
 
